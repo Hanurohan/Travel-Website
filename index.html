@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MoonLight Travels — Luxury Expeditions</title>
+  <link rel="stylesheet" href="style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  
+  <!-- Leaflet Map CSS & JS (Free, No API Keys needed) -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js"></script>
+</head>
+<body>
+
+  <!-- Floating Navigation -->
+  <nav class="navbar">
+    <div class="nav-brand">
+      <img src="logo.jpg" alt="Logo" class="nav-logo" />
+      <span>MOONLIGHT</span>
+    </div>
+    <div class="nav-links">
+      <a href="#hero">Overview</a>
+      <a href="#features">Experience</a>
+      <a href="#customizer">Bespoke Studio</a>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <header id="hero" class="hero-section">
+    <video autoplay muted loop playsinline class="hero-video">
+      <source src="van-video.mp4" type="video/mp4" />
+      <img src="van.webp" alt="MoonLight Van" />
+    </video>
+    <div class="video-overlay"></div>
+
+    <div class="hero-content" data-gsap="hero-text">
+      <span class="badge">First-Class Fleet</span>
+      <h1 class="hero-title">Make Moments <br /><span class="gold-text">Memorable.</span></h1>
+      <p class="hero-subtitle">The standard for bespoke interstate travel across Tamil Nadu & beyond.</p>
+      <a href="#customizer" class="btn-primary">Design Your Tour &darr;</a>
+    </div>
+  </header>
+
+  <!-- Features Showcase -->
+  <section id="features" class="scroll-showcase">
+    <div class="pinned-container">
+      <div class="spotlight-visual">
+        <img src="van.webp" alt="High Torque Cruising" class="feature-img active" id="feat-img-1" />
+        <img src="van-interior.webp" alt="Neon Ambient Suites" class="feature-img" id="feat-img-2" onerror="this.src='van.webp'" />
+        <img src="van-scenic.webp" alt="Scenic Detours" class="feature-img" id="feat-img-3" onerror="this.src='van.webp'" />
+        <div class="ambient-glow"></div>
+      </div>
+      
+      <div class="scroll-captions">
+        <div class="caption-card active" data-img-target="feat-img-1">
+          <span class="gold-tag">FM 2.6 CR Precision</span>
+          <h2>Smooth High-Torque Cruising.</h2>
+          <p>Engineered for effortless hill climbs through Ooty and western ghat passes with unmatched highway stability.</p>
+        </div>
+
+        <div class="caption-card" data-img-target="feat-img-2">
+          <span class="gold-tag">First-Class Cabin</span>
+          <h2>Neon Ambient Night Suites.</h2>
+          <p>Plush leather push-back recliners, individual climate vents, and dynamic mood lights designed for evening travel.</p>
+        </div>
+
+        <div class="caption-card" data-img-target="feat-img-3">
+          <span class="gold-tag">Bespoke Waypoints</span>
+          <h2>Travel On Your Terms.</h2>
+          <p>Pick custom stops, scenic detour viewpoints, and curated stays on your own timeline.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Customizer with Live Sliding Route Map -->
+  <section id="customizer" class="customizer-section">
+    <div class="section-title">
+      <span class="badge">The Studio</span>
+      <h2>Craft Your Journey</h2>
+      <p>Configure your fleet model, routes, bespoke stops, and stay preferences.</p>
+    </div>
+
+    <div class="builder-grid">
+      <div class="builder-controls">
+        
+        <!-- Step 1: Fleet Mode & Tariff Drawer -->
+        <div class="control-box tilt-card">
+          <h3>1. Fleet & Transport Mode</h3>
+          <p class="sub-label">Select your vehicle category:</p>
+          <div class="option-row">
+            <button type="button" class="opt-btn transport-btn" data-transport="force_14">
+              <strong>14-Seater Traveller</strong>
+              <small>Executive Recliners</small>
+            </button>
+            <button type="button" class="opt-btn transport-btn" data-transport="force_28">
+              <strong>28-Seater Coach</strong>
+              <small>Large Group Touring</small>
+            </button>
+            <button type="button" class="opt-btn transport-btn" data-transport="flight_transfer">
+              <strong>Flight Transfer + Van</strong>
+              <small>Airport Pickup & Escort</small>
+            </button>
+          </div>
+
+          <div id="tariffDrawer" class="tariff-drawer hidden">
+            <div class="tariff-header">
+              <span class="pulse-dot"></span>
+              <h4 id="selectedFleetTitle">Pricing Structure</h4>
+            </div>
+            
+            <div class="tariff-options-grid">
+              <label class="tariff-card" id="dailyOptionLabel">
+                <input type="radio" name="billingChoice" value="daily" />
+                <div class="tariff-info">
+                  <strong id="dailyRateText">Daily Package</strong>
+                  <small>Includes up to 300 km usage / day</small>
+                </div>
+              </label>
+
+              <label class="tariff-card" id="kmOptionLabel">
+                <input type="radio" name="billingChoice" value="per_km" />
+                <div class="tariff-info">
+                  <strong id="kmRateText">Per KM Rate</strong>
+                  <small class="disclaimer">Excludes driver bata, night halt, & tolls</small>
+                </div>
+              </label>
+            </div>
+
+            <div class="tariff-inputs-row hidden" id="dailyInputGroup">
+              <label>Rental Duration:</label>
+              <input type="number" id="rentalDaysInput" placeholder="0" min="1" max="30" />
+              <span class="unit-tag">Days</span>
+            </div>
+
+            <div class="tariff-inputs-row hidden" id="kmInputGroup">
+              <label>Calculated Distance:</label>
+              <input type="number" id="estimatedKmInput" placeholder="0" readonly />
+              <span class="unit-tag">KM (Auto from Map)</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 2: Route with Interactive Slide-Out Map Stage -->
+        <div class="control-box tilt-card" id="routeControlBox">
+          <div class="flex-between">
+            <h3>2. Route & Interactive Waypoints</h3>
+            <span class="map-hint-pill" id="mapStatusTag">Hover input to expand Map &rarr;</span>
+          </div>
+
+          <div class="route-interactive-container">
+            <!-- Input Side -->
+            <div class="route-fields">
+              <div class="input-duo">
+                <div class="input-group">
+                  <label>Pickup Location</label>
+                  <input type="text" id="originInput" placeholder="e.g. Chennai" autocomplete="off" />
+                </div>
+                <div class="input-group">
+                  <label>Final Destination</label>
+                  <input type="text" id="destInput" placeholder="e.g. Ooty" autocomplete="off" />
+                </div>
+              </div>
+
+              <div class="input-group" style="margin-top: 15px;">
+                <label>Add Bespoke Waypoints (+ ₹1,500 each)</label>
+                <div class="inline-add">
+                  <input type="text" id="stopInput" placeholder="e.g. Mettupalayam, Coonoor" />
+                  <button id="addStopBtn" type="button">+ Add</button>
+                </div>
+                <div id="stopsList" class="tags-container"></div>
+              </div>
+            </div>
+
+            <!-- Slide-in Map Canvas -->
+            <div class="map-slideout-wrapper" id="mapDrawerWrapper">
+              <div id="tripMap"></div>
+              <div class="map-distance-badge" id="mapDistanceBadge">
+                <span>Total Highway Distance: </span>
+                <strong id="liveMapKm">0 KM</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 3: Stays & Nights -->
+        <div class="control-box tilt-card">
+          <h3>3. Accommodation Class</h3>
+          <div class="tier-grid">
+            <button type="button" class="tier-btn" data-tier="Standard">
+              <strong>Standard</strong>
+              <small>₹2,500 / night</small>
+            </button>
+            <button type="button" class="tier-btn" data-tier="Premium">
+              <strong>Heritage Villa</strong>
+              <small>₹4,500 / night</small>
+            </button>
+            <button type="button" class="tier-btn" data-tier="Luxury">
+              <strong>5-Star Resort</strong>
+              <small>₹7,500 / night</small>
+            </button>
+          </div>
+
+          <div class="input-group" style="margin-top: 16px;">
+            <label>Duration of Stay (Nights)</label>
+            <input type="number" id="nightsInput" placeholder="0" min="0" max="15" />
+          </div>
+        </div>
+
+        <!-- Step 4: Add-On Experiences -->
+        <div class="control-box tilt-card">
+          <h3>4. Curated Experiences</h3>
+          <div class="addon-list">
+            <label class="addon-item">
+              <input type="checkbox" class="addon-check" data-name="Campfire & BBQ Night" data-price="2500" />
+              <div>
+                <strong>Campfire & BBQ Setup</strong>
+                <small>Private hill-view evening bonfire (+ ₹2,500)</small>
+              </div>
+            </label>
+            <label class="addon-item">
+              <input type="checkbox" class="addon-check" data-name="Guided Forest Safari" data-price="3500" />
+              <div>
+                <strong>Guided Tea/Forest Safari</strong>
+                <small>Offroad morning estate excursion (+ ₹3,500)</small>
+              </div>
+            </label>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Right Summary Panel -->
+      <div class="builder-receipt-wrapper">
+        <div class="receipt-card">
+          <h3>Trip Invoice Summary</h3>
+          
+          <div class="receipt-items">
+            <div class="receipt-line">
+              <div>
+                <span id="summaryTransportName">No Fleet Selected</span>
+                <small id="summaryBillingDesc">—</small>
+              </div>
+              <span id="baseCostText">₹0</span>
+            </div>
+            <div class="receipt-line">
+              <span>Waypoints (<span id="stopsCount">0</span>)</span>
+              <span id="stopsCostText">₹0</span>
+            </div>
+            <div class="receipt-line">
+              <span>Stay (<span id="summaryTier">None</span> × <span id="summaryNights">0</span>n)</span>
+              <span id="stayCostText">₹0</span>
+            </div>
+            <div class="receipt-line">
+              <span>Selected Add-ons</span>
+              <span id="addonCostText">₹0</span>
+            </div>
+          </div>
+
+          <div class="receipt-total">
+            <div>
+              <p class="total-label">Total Estimated Package</p>
+              <small class="tax-tag">Includes Chauffeur & Road Permits</small>
+            </div>
+            <span class="gold-total" id="totalCostText">₹0</span>
+          </div>
+
+          <button id="whatsappBtn" class="btn-book">
+            Reserve via Dispatch Concierge &rarr;
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Performance CDNs -->
+  <script src="https://cdn.jsdelivr.net/npm/@studio-freight/lenis@1.0.42/dist/lenis.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
