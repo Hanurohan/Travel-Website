@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="style.css" />
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
   
-  <!-- Leaflet Map CSS & JS (Free, No API Keys needed) -->
+  <!-- Leaflet Map CSS & JS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -25,14 +25,15 @@
       <a href="#hero">Overview</a>
       <a href="#features">Experience</a>
       <a href="#customizer">Bespoke Studio</a>
+      <button id="authNavBtn" class="nav-auth-btn">Sign In</button>
     </div>
   </nav>
 
-  <!-- Hero Section -->
+  <!-- Background Video Hero -->
   <header id="hero" class="hero-section">
     <video autoplay muted loop playsinline class="hero-video">
       <source src="van-video.mp4" type="video/mp4" />
-      <img src="van.webp" alt="MoonLight Van" />
+      <img src="van.jpg" alt="MoonLight Van" />
     </video>
     <div class="video-overlay"></div>
 
@@ -48,9 +49,9 @@
   <section id="features" class="scroll-showcase">
     <div class="pinned-container">
       <div class="spotlight-visual">
-        <img src="van.webp" alt="High Torque Cruising" class="feature-img active" id="feat-img-1" />
-        <img src="van-interior.webp" alt="Neon Ambient Suites" class="feature-img" id="feat-img-2" onerror="this.src='van.webp'" />
-        <img src="van-scenic.webp" alt="Scenic Detours" class="feature-img" id="feat-img-3" onerror="this.src='van.webp'" />
+        <img src="van.jpg" alt="High Torque Cruising" class="feature-img active" id="feat-img-1" />
+        <img src="van.jpg" alt="Neon Ambient Suites" class="feature-img" id="feat-img-2" />
+        <img src="van.jpg" alt="Scenic Detours" class="feature-img" id="feat-img-3" />
         <div class="ambient-glow"></div>
       </div>
       
@@ -76,18 +77,47 @@
     </div>
   </section>
 
-  <!-- Customizer with Live Sliding Route Map -->
+  <!-- Customizer Studio -->
   <section id="customizer" class="customizer-section">
     <div class="section-title">
       <span class="badge">The Studio</span>
       <h2>Craft Your Journey</h2>
-      <p>Configure your fleet model, routes, bespoke stops, and stay preferences.</p>
+      <p>Configure every parameter manually or type your request in plain English.</p>
+    </div>
+
+    <!-- AI Prompt Box -->
+    <div class="ai-prompt-box">
+      <div class="ai-prompt-header">
+        <div class="ai-badge">
+          <span class="ai-sparkle">✦</span> Natural Language Trip Concierge
+        </div>
+        <p>Type your itinerary freely and press Enter. We'll parse the route, vehicles, stays, and generate an exact invoice.</p>
+      </div>
+
+      <div class="ai-input-wrapper">
+        <textarea 
+          id="naturalPromptInput" 
+          rows="3" 
+          placeholder="e.g. We will come on 7th oct by flight at chennai and we will be 14 persons including me and we planned to go to valparai with some forest ride for some 2 days..."
+        ></textarea>
+        <button id="parsePromptBtn" class="btn-ai-generate">
+          <span>Auto-Build Trip</span>
+          <span class="btn-arrow">&rarr;</span>
+        </button>
+      </div>
+
+      <div class="ai-suggestions">
+        <span>Try examples:</span>
+        <button type="button" class="ai-chip" data-prompt="We are 6 people arriving in Coimbatore heading to Ooty for 3 nights with campfire">Coimbatore to Ooty (3 Nights)</button>
+        <button type="button" class="ai-chip" data-prompt="14 persons from Chennai to Valparai for 2 days with forest ride">Chennai to Valparai (14 Pax)</button>
+        <button type="button" class="ai-chip" data-prompt="24 people wedding group Chennai to Pondicherry for 2 days 5-star resort">Chennai to Pondy (24 Pax Luxury)</button>
+      </div>
     </div>
 
     <div class="builder-grid">
       <div class="builder-controls">
         
-        <!-- Step 1: Fleet Mode & Tariff Drawer -->
+        <!-- Step 1: Fleet & Mode -->
         <div class="control-box tilt-card">
           <h3>1. Fleet & Transport Mode</h3>
           <p class="sub-label">Select your vehicle category:</p>
@@ -144,7 +174,7 @@
           </div>
         </div>
 
-        <!-- Step 2: Route with Interactive Slide-Out Map Stage -->
+        <!-- Step 2: Route with Google-Style Suggestions & Map -->
         <div class="control-box tilt-card" id="routeControlBox">
           <div class="flex-between">
             <h3>2. Route & Interactive Waypoints</h3>
@@ -152,30 +182,31 @@
           </div>
 
           <div class="route-interactive-container">
-            <!-- Input Side -->
             <div class="route-fields">
               <div class="input-duo">
-                <div class="input-group">
+                <div class="input-group autocomplete-container">
                   <label>Pickup Location</label>
                   <input type="text" id="originInput" placeholder="e.g. Chennai" autocomplete="off" />
+                  <ul id="originSuggestions" class="suggestions-list hidden"></ul>
                 </div>
-                <div class="input-group">
+                <div class="input-group autocomplete-container">
                   <label>Final Destination</label>
                   <input type="text" id="destInput" placeholder="e.g. Ooty" autocomplete="off" />
+                  <ul id="destSuggestions" class="suggestions-list hidden"></ul>
                 </div>
               </div>
 
-              <div class="input-group" style="margin-top: 15px;">
+              <div class="input-group autocomplete-container" style="margin-top: 15px;">
                 <label>Add Bespoke Waypoints (+ ₹1,500 each)</label>
                 <div class="inline-add">
-                  <input type="text" id="stopInput" placeholder="e.g. Mettupalayam, Coonoor" />
+                  <input type="text" id="stopInput" placeholder="e.g. Mettupalayam, Coonoor" autocomplete="off" />
                   <button id="addStopBtn" type="button">+ Add</button>
                 </div>
+                <ul id="stopSuggestions" class="suggestions-list hidden"></ul>
                 <div id="stopsList" class="tags-container"></div>
               </div>
             </div>
 
-            <!-- Slide-in Map Canvas -->
             <div class="map-slideout-wrapper" id="mapDrawerWrapper">
               <div id="tripMap"></div>
               <div class="map-distance-badge" id="mapDistanceBadge">
@@ -186,31 +217,57 @@
           </div>
         </div>
 
-        <!-- Step 3: Stays & Nights -->
+        <!-- Step 3: Stays & Hotels -->
         <div class="control-box tilt-card">
-          <h3>3. Accommodation Class</h3>
+          <div class="flex-between">
+            <h3>3. Accommodation Class</h3>
+            <button type="button" class="btn-browse-hotels" id="openHotelsModalBtn">
+              Browse Available Hotels &rarr;
+            </button>
+          </div>
+          <p class="sub-label">Select tier or click browse to choose specific properties:</p>
+
           <div class="tier-grid">
             <button type="button" class="tier-btn" data-tier="Standard">
-              <strong>Standard</strong>
-              <small>₹2,500 / night</small>
+              <strong>Standard 3-Star</strong>
+              <small>Avg ₹2,500 / room / night</small>
             </button>
             <button type="button" class="tier-btn" data-tier="Premium">
               <strong>Heritage Villa</strong>
-              <small>₹4,500 / night</small>
+              <small>Avg ₹4,500 / room / night</small>
             </button>
             <button type="button" class="tier-btn" data-tier="Luxury">
               <strong>5-Star Resort</strong>
-              <small>₹7,500 / night</small>
+              <small>Avg ₹8,500 / room / night</small>
             </button>
           </div>
 
-          <div class="input-group" style="margin-top: 16px;">
-            <label>Duration of Stay (Nights)</label>
-            <input type="number" id="nightsInput" placeholder="0" min="0" max="15" />
+          <div id="selectedHotelBadge" class="selected-hotel-badge hidden">
+            <div class="hotel-badge-content">
+              <span class="hotel-pill-tier" id="badgeTier">Luxury</span>
+              <strong id="badgeHotelName">Fortune Resort Sullivan Court</strong>
+              <span class="hotel-badge-price" id="badgePrice">₹9,200/room/night</span>
+            </div>
+            <button type="button" id="clearSelectedHotelBtn">&times;</button>
+          </div>
+
+          <div class="stay-config-inputs">
+            <div class="input-group">
+              <label>Guests Count</label>
+              <input type="number" id="guestsInput" value="2" min="1" max="50" />
+            </div>
+            <div class="input-group">
+              <label>Rooms (2 Guests/Room)</label>
+              <input type="number" id="roomsInput" value="1" min="1" readonly />
+            </div>
+            <div class="input-group">
+              <label>Duration (Nights)</label>
+              <input type="number" id="nightsInput" value="2" min="1" max="20" />
+            </div>
           </div>
         </div>
 
-        <!-- Step 4: Add-On Experiences -->
+        <!-- Step 4: Add-Ons -->
         <div class="control-box tilt-card">
           <h3>4. Curated Experiences</h3>
           <div class="addon-list">
@@ -251,7 +308,10 @@
               <span id="stopsCostText">₹0</span>
             </div>
             <div class="receipt-line">
-              <span>Stay (<span id="summaryTier">None</span> × <span id="summaryNights">0</span>n)</span>
+              <div>
+                <span id="summaryStayTitle">Accommodation</span>
+                <small id="summaryStayDesc">0 Rooms × 0 Nights</small>
+              </div>
               <span id="stayCostText">₹0</span>
             </div>
             <div class="receipt-line">
@@ -276,7 +336,81 @@
     </div>
   </section>
 
-  <!-- Performance CDNs -->
+  <!-- Hotel Modal -->
+  <div id="hotelModal" class="hotel-modal-backdrop hidden">
+    <div class="hotel-modal-container">
+      <div class="modal-header">
+        <div>
+          <span class="gold-tag">Curated Stays</span>
+          <h2>Select Your Preferred Property</h2>
+          <p>Real-time average seasonal rates per room / night.</p>
+        </div>
+        <button id="closeHotelModalBtn" class="modal-close">&times;</button>
+      </div>
+
+      <div class="modal-tabs">
+        <button class="modal-tab active" data-filter="all">All Properties</button>
+        <button class="modal-tab" data-filter="Luxury">5-Star Resorts</button>
+        <button class="modal-tab" data-filter="Premium">Heritage & Boutique</button>
+        <button class="modal-tab" data-filter="Standard">Standard 3-Star</button>
+      </div>
+
+      <div class="hotel-cards-grid" id="hotelCardsGrid"></div>
+    </div>
+  </div>
+
+  <!-- Slide-Over Auth Drawer -->
+  <div id="slideDrawerBackdrop" class="drawer-backdrop hidden">
+    <div id="authSlideDrawer" class="slide-drawer">
+      <div class="drawer-header">
+        <div>
+          <span class="gold-tag">Trip Concierge</span>
+          <h2 id="drawerTitle">Sign In to Continue</h2>
+          <p id="drawerSubtitle">Save your route and reserve your chauffeur.</p>
+        </div>
+        <button id="closeDrawerBtn" class="btn-drawer-close">&times;</button>
+      </div>
+
+      <div class="drawer-tabs">
+        <button type="button" id="tabSignIn" class="drawer-tab active">Sign In</button>
+        <button type="button" id="tabSignUp" class="drawer-tab">Create Account</button>
+      </div>
+
+      <form id="drawerAuthForm" class="drawer-form">
+        <div class="input-group hidden" id="signUpNameField">
+          <label>Full Name</label>
+          <input type="text" id="drawerName" placeholder="e.g. Rahul Sharma" autocomplete="name" />
+        </div>
+
+        <div class="input-group">
+          <label>Email Address</label>
+          <input type="email" id="drawerEmail" placeholder="name@domain.com" required autocomplete="email" />
+        </div>
+
+        <div class="input-group">
+          <label>Password</label>
+          <input type="password" id="drawerPassword" placeholder="••••••••" required autocomplete="current-password" />
+        </div>
+
+        <div class="input-group hidden" id="signUpPhoneField">
+          <label>Phone / WhatsApp Number</label>
+          <input type="tel" id="drawerPhone" placeholder="+91 98765 43210" autocomplete="tel" />
+        </div>
+
+        <p id="drawerError" class="drawer-error hidden"></p>
+
+        <button type="submit" id="drawerSubmitBtn" class="btn-primary drawer-submit-btn">
+          Sign In & Confirm &rarr;
+        </button>
+      </form>
+
+      <div class="drawer-footer">
+        <span>🔒 Secure 256-bit encrypted session</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/@studio-freight/lenis@1.0.42/dist/lenis.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
