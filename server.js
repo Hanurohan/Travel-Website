@@ -1,7 +1,11 @@
 import express from 'express';
-import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import jwt from 'jsonwebtoken';
+import db from './db.js';
+import authRoutes, { JWT_SECRET } from './auth.js';
+import { sendWhatsAppMessage } from './services/whatsapp.js';
+import { initReminderScheduler } from './services/cron.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -9,95 +13,99 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Tariff Structures
-const VEHICLE_RATES = {
-  force_14: {
-    name: "14-Seater Luxury Traveller",
-    perKm: 26,
-    dailyRate: 7500,
-  },
-  force_28: {
-    name: "28-Seater Executive Coach",
-    perKm: 32,
-    dailyRate: 8000,
-  },
-  flight_transfer: {
-    name: "Flight Transfer + Van",
-    fixedBase: 32000
-  }
-};
+app.use('/api/auth', authRoutes);
 
-const PRICING_RULES = {
-  costPerCustomStop: 1500,
-  stayRates: {
-    Standard: 2500,
-    Premium: 4500,
-    Luxury: 7500
-  }
-};
+// Save booking & trigger automated instant WhatsApp confirmation
+app.post('/api/bookings', async (req, res) => {
+  const { 
+    customer_name, 
+    customer_phone, 
+    origin, 
+    destination, 
+    fleet_name, 
+    billing_type, 
+    distance_km, 
+    hotel_details, 
+    total_cost, 
+    trip_date 
+  } = req.body;
 
-app.post('/api/calculate-quote', (req, res) => {
+  let userId = null;
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    const token = authHeader.split(' ')[1];
+    try {
+      const decoded = jwt.verify(token, JWT_SECRET);
+      userId = decoded.id;
+    } catch (e) {}
+  }
+
+  // Ensure default fallback date if not supplied
+  const effectiveDate = trip_date || new Date().toISOString().split('T')[0];
+
   try {
-    const { 
-      transportType = null,
-      billingType = null, 
-      estimatedKm = 0,
-      rentalDays = 0,
-      stops = [], 
-      stayTier = null, 
-      nights = 0,
-      addonsCost = 0
-    } = req.body;
+    const insertBooking = db.prepare(`
+      INSERT INTO bookings (
+        user_id, customer_name, customer_phone, origin, destination, 
+        fleet_name, billing_type, distance_km, hotel_details, total_cost, trip_date
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
 
-    let baseTransportCost = 0;
-    let billingDescription = "—";
+    const result = insertBooking.run(
+      userId,
+      customer_name || 'Guest Traveler',
+      customer_phone || null,
+      origin || 'Not specified',
+      destination || 'Not specified',
+      fleet_name || '14-Seater Luxury Traveller',
+      billing_type || 'Standard',
+      distance_km || 0,
+      hotel_details || 'None',
+      total_cost || 0,
+      effectiveDate
+    );
 
-    if (transportType === 'flight_transfer') {
-      baseTransportCost = VEHICLE_RATES.flight_transfer.fixedBase;
-      billingDescription = "Fixed Airport Escort Base";
-    } else if (transportType && VEHICLE_RATES[transportType]) {
-      const vehicle = VEHICLE_RATES[transportType];
-      if (billingType === 'per_km' && Number(estimatedKm) > 0) {
-        baseTransportCost = vehicle.perKm * Number(estimatedKm);
-        billingDescription = `₹${vehicle.perKm}/km × ${estimatedKm} km (excl. bata & halt)`;
-      } else if (billingType === 'daily' && Number(rentalDays) > 0) {
-        baseTransportCost = vehicle.dailyRate * Number(rentalDays);
-        billingDescription = `₹${vehicle.dailyRate.toLocaleString('en-IN')}/day × ${rentalDays} days (300 km/day)`;
-      }
+    // Send instant confirmation message via WhatsApp
+    if (customer_phone) {
+      await sendWhatsAppMessage(
+        customer_phone,
+        'booking_confirmation', // Meta template name
+        [customer_name || 'Traveler', effectiveDate, origin, destination, fleet_name]
+      );
     }
 
-    const stopsCost = (stops.length || 0) * PRICING_RULES.costPerCustomStop;
-    
-    let stayCost = 0;
-    if (stayTier && PRICING_RULES.stayRates[stayTier] && Number(nights) > 0) {
-      stayCost = PRICING_RULES.stayRates[stayTier] * Number(nights);
-    }
-    
-    const totalCost = baseTransportCost + stopsCost + stayCost + Number(addonsCost);
-
-    res.json({
-      success: true,
-      breakdown: {
-        baseTransportCost,
-        billingDescription,
-        stopsCount: stops.length,
-        stopsCost,
-        stayTier: stayTier || "None",
-        nights: Number(nights),
-        stayCost,
-        addonsCost: Number(addonsCost),
-        totalCost
-      }
-    });
-  } catch (error) {
-    res.status(500).json({ success: false, error: 'Calculation failed' });
+    res.json({ success: true, bookingId: result.lastInsertRowid });
+  } catch (err) {
+    console.error('Booking Insert Error:', err);
+    res.status(500).json({ success: false, message: 'Database insert failed' });
   }
 });
 
+// Admin data view endpoint
+app.get('/api/admin/data', (req, res) => {
+  try {
+    const users = db.prepare('SELECT id, name, email, phone, role, created_at FROM users ORDER BY id DESC').all();
+    const bookings = db.prepare('SELECT * FROM bookings ORDER BY id DESC').all();
+    res.json({ success: true, users, bookings });
+  } catch (err) {
+    console.error('Admin fetch error:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// Start scheduler & listen
+initReminderScheduler();
+
 app.listen(PORT, () => {
-  console.log(`MoonLight Travels server running on http://localhost:${PORT}`);
+  console.log(`MoonLight Server live at http://localhost:${PORT}`);
+  console.log(`Admin Monitor live at http://localhost:${PORT}/admin.html`);
 });
